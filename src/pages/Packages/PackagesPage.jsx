@@ -2,13 +2,14 @@ import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import PageTemplate from "../../components/PageTemplate";
 import { tourPackages as fallbackPackages } from "../../data/packages";
+import { apiFetch } from "../../utils/api";
 
 export default function PackagesPage() {
   const [packages, setPackages] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch("/api/packages")
+    apiFetch("/api/packages")
       .then((res) => res.json())
       .then((data) => {
         if (data && data.length > 0) {

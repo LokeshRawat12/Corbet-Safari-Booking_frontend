@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { apiFetch } from "../../utils/api";
 
 export default function TicketPriceManager() {
   const [prices, setPrices] = useState([]);
@@ -13,7 +14,7 @@ export default function TicketPriceManager() {
 
   const loadPrices = async () => {
     try {
-      const response = await fetch("/api/ticket-prices");
+      const response = await apiFetch("/api/ticket-prices");
       if (response.ok) {
         setPrices(await response.json());
       }
@@ -32,7 +33,7 @@ export default function TicketPriceManager() {
     const url = form._id ? `/api/ticket-prices/${form._id}` : "/api/ticket-prices";
 
     try {
-      const res = await fetch(url, {
+      const res = await apiFetch(url, {
         method,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(form)
@@ -51,7 +52,7 @@ export default function TicketPriceManager() {
   const deletePrice = async (id) => {
     if (!confirm("Are you sure you want to delete this price entry?")) return;
     try {
-      await fetch(`/api/ticket-prices/${id}`, { method: "DELETE" });
+      await apiFetch(`/api/ticket-prices/${id}`, { method: "DELETE" });
       loadPrices();
     } catch (error) {
       console.error("Failed to delete ticket price", error);

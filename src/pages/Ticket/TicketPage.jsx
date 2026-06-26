@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import PageTemplate from "../../components/PageTemplate";
+import { apiFetch } from "../../utils/api";
 
 const initialTicketRates = [
   { category: "Indian Nationals", entryFee: "₹150", jeepHire: "₹2,500" },
@@ -18,12 +19,11 @@ const cameraFees = [
 
 export default function TicketPage() {
   const [ticketRates, setTicketRates] = useState(initialTicketRates);
-  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:4000";
 
   useEffect(() => {
     async function fetchPrices() {
       try {
-        const res = await fetch(`${API_BASE_URL}/api/ticket-prices`);
+        const res = await apiFetch(`/api/ticket-prices`);
         if (res.ok) {
           const data = await res.json();
           if (data.length > 0) setTicketRates(data);
@@ -33,7 +33,7 @@ export default function TicketPage() {
       }
     }
     fetchPrices();
-  }, [API_BASE_URL]);
+  }, []);
 
   return (
     <PageTemplate

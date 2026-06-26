@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { apiFetch } from "../../utils/api";
 
 export default function ZoneManager() {
   const [zones, setZones] = useState([]);
@@ -8,12 +9,13 @@ export default function ZoneManager() {
     price: 0,
     foreignerPrice: 0,
     closureNotice: "",
+    image: "",
     pricing: []
   });
 
   const loadZones = async () => {
     try {
-      const response = await fetch("/api/zones");
+      const response = await apiFetch("/api/zones");
       if (response.ok) {
         setZones(await response.json());
       }
@@ -33,6 +35,7 @@ export default function ZoneManager() {
       price: zone.price || 0,
       foreignerPrice: zone.foreignerPrice || 0,
       closureNotice: zone.closureNotice || "",
+      image: zone.image || "",
       pricing: zone.pricing || [
         { category: "Indian Nationals", entryFee: "₹150", jeepHire: "₹2,500" },
         { category: "Foreign Nationals", entryFee: "₹600", jeepHire: "₹4,500" }
@@ -61,7 +64,7 @@ export default function ZoneManager() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const res = await fetch(`/api/zones/${editingZone.slug}`, {
+      const res = await apiFetch(`/api/zones/${editingZone.slug}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(form)
@@ -86,33 +89,40 @@ export default function ZoneManager() {
         {zones.map((zone) => (
           <div
             key={zone.slug}
-            className={`group rounded-2xl border border-white/10 p-5 backdrop-blur transition hover:scale-[1.02] ${zone.isOpen === false ? 'bg-red-500/10 border-red-500/20' : 'bg-white/5'}`}
+            className={`group rounded-2xl border border-white/10 overflow-hidden bg-white/5 backdrop-blur transition hover:scale-[1.02] ${zone.isOpen === false ? 'border-red-500/20' : ''}`}
           >
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="font-bold text-white">{zone.title}</h3>
-              {zone.isOpen === false ? (
-                <span className="rounded-full bg-red-500/20 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-red-400 border border-red-500/20">
-                  Closed
-                </span>
-              ) : (
-                <span className="rounded-full bg-emerald-500/20 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-emerald-400 border border-emerald-500/20">
-                  Open
-                </span>
-              )}
-            </div>
-            <div className="flex justify-between items-center mb-4">
-              <p className="text-xs text-white/50 truncate">{zone.closureNotice || "Operates Daily"}</p>
-              <div className="text-right">
-                <p className="text-[10px] font-bold text-white/40 uppercase">IND / FOR</p>
-                <p className="text-sm font-bold text-amber-400">₹{zone.price || 0} / ₹{zone.foreignerPrice || 0}</p>
+            <div className="h-32 bg-slate-800 relative">
+              {zone.image && <img src={zone.image} className="h-full w-full object-cover transition duration-500 group-hover:scale-110" alt="" />}
+              <div className="absolute top-2 right-2 flex flex-col gap-1">
+                {zone.isOpen === false ? (
+                  <span className="rounded bg-red-500/80 backdrop-blur px-2 py-0.5 text-[8px] font-bold text-white uppercase tracking-wider border border-red-500/20">
+                    Closed
+                  </span>
+                ) : (
+                  <span className="rounded bg-emerald-500/80 backdrop-blur px-2 py-0.5 text-[8px] font-bold text-white uppercase tracking-wider border border-emerald-500/20">
+                    Open
+                  </span>
+                )}
               </div>
             </div>
-            <button
-              onClick={() => handleEdit(zone)}
-              className="w-full rounded-xl bg-white/10 py-2 text-xs font-bold text-white transition hover:bg-white/20"
-            >
-              Edit Settings
-            </button>
+            <div className="p-5">
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="font-bold text-white">{zone.title}</h3>
+              </div>
+              <div className="flex justify-between items-center mb-4">
+                <p className="text-xs text-white/50 truncate max-w-[120px]">{zone.closureNotice || "Operates Daily"}</p>
+                <div className="text-right">
+                  <p className="text-[10px] font-bold text-white/40 uppercase">IND / FOR</p>
+                  <p className="text-sm font-bold text-amber-400">₹{zone.price || 0} / ₹{zone.foreignerPrice || 0}</p>
+                </div>
+              </div>
+              <button
+                onClick={() => handleEdit(zone)}
+                className="w-full rounded-xl bg-white/10 py-2 text-xs font-bold text-white transition hover:bg-white/20"
+              >
+                Edit Settings
+              </button>
+            </div>
           </div>
         ))}
       </div>
@@ -158,6 +168,17 @@ export default function ZoneManager() {
                         placeholder="e.g. 1500"
                       />
                     </div>
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-bold uppercase tracking-widest text-white/40">Zone Image URL</label>
+                    <input
+                      type="text"
+                      value={form.image}
+                      onChange={(e) => setForm({ ...form, image: e.target.value })}
+                      className="w-full rounded-2xl border border-white/10 bg-white/5 p-4 text-sm text-white outline-none focus:border-amber-400"
+                      placeholder="e.g. /images/Dhikala.jpg"
+                    />
                   </div>
 
                   <div className="space-y-1">

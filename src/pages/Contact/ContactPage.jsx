@@ -1,6 +1,7 @@
 import { useState } from "react";
 import PageTemplate from "../../components/PageTemplate";
 import { countryCodes } from "../../data/countries";
+import { apiFetch } from "../../utils/api";
 
 export default function ContactPage() {
   const [form, setForm] = useState({ name: "", email: "", countryCode: "+91", phone: "", message: "" });
@@ -21,7 +22,7 @@ export default function ContactPage() {
     setSubmitted(false);
 
     try {
-      const response = await fetch("/api/contact", {
+      const response = await apiFetch("/api/contact", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

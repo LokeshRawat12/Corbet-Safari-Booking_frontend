@@ -1,11 +1,12 @@
 import { useState, useEffect } from "react";
+import { apiFetch } from "../../utils/api";
 
 export default function ContactManager() {
   const [messages, setMessages] = useState([]);
 
   const loadMessages = async () => {
     try {
-      const response = await fetch("/api/contact");
+      const response = await apiFetch("/api/contact");
       if (response.ok) {
         setMessages(await response.json());
       }
@@ -21,7 +22,7 @@ export default function ContactManager() {
   const deleteMessage = async (id) => {
     if (!confirm("Delete this message?")) return;
     try {
-      await fetch(`/api/contact/${id}`, { method: "DELETE" });
+      await apiFetch(`/api/contact/${id}`, { method: "DELETE" });
       loadMessages();
     } catch (error) {
       console.error("Failed to delete message", error);

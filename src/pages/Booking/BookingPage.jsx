@@ -3,6 +3,7 @@ import { useSearchParams } from "react-router-dom";
 import PageTemplate from "../../components/PageTemplate";
 import { tourPackages as fallbackPackages } from "../../data/packages";
 import { countryCodes } from "../../data/countries";
+import { apiFetch } from "../../utils/api";
 
 /* ---------- tiny animation helper ---------- */
 const FadeIn = ({ children, delay = 0 }) => (
@@ -33,6 +34,7 @@ export default function BookingPage() {
 
   const isHotelBooking = searchParams.get("type") === "hotel";
   const hotelData = {
+    hotelId: searchParams.get("hotelId") || "",
     name: searchParams.get("hotelName") || "",
     roomType: searchParams.get("roomType") || "",
     mealPlan: searchParams.get("mealPlan") || "",
@@ -43,7 +45,37 @@ export default function BookingPage() {
     children: Number(searchParams.get("children")) || 0,
   };
 
+  useEffect(() => {
+    if (!isHotelBooking) return;
+
+    setForm((prev) => ({
+      ...prev,
+      hotelId: hotelData.hotelId,
+      hotelRequired: true,
+      hotelName: hotelData.name || prev.hotelName,
+      roomType: hotelData.roomType || prev.roomType,
+      mealPlan: hotelData.mealPlan || prev.mealPlan,
+      hotelPrice: hotelData.price || prev.hotelPrice,
+      hotelTaxes: hotelData.taxes || prev.hotelTaxes,
+      date: hotelData.date || prev.date,
+      adults: hotelData.adults || prev.adults,
+      children: hotelData.children || prev.children,
+    }));
+  }, [
+    isHotelBooking,
+    hotelData.hotelId,
+    hotelData.name,
+    hotelData.roomType,
+    hotelData.mealPlan,
+    hotelData.price,
+    hotelData.taxes,
+    hotelData.date,
+    hotelData.adults,
+    hotelData.children,
+  ]);
+
   const initialForm = {
+    hotelId: hotelData.hotelId || "",
     name: "",
     email: "",
     phone: "",
@@ -56,6 +88,7 @@ export default function BookingPage() {
     hotelName: hotelData.name || "",
     roomType: hotelData.roomType || "",
     mealPlan: hotelData.mealPlan || "",
+    hotelPrice: hotelData.price || 0,
     hotelTaxes: hotelData.taxes || 0,
     tourismZone: searchParams.get("zone") || "",
     zonePrice: 0,
@@ -82,12 +115,12 @@ export default function BookingPage() {
   };
 
   useEffect(() => {
-    fetch("/api/hotels")
+    apiFetch("/api/hotels")
       .then(res => res.json())
       .then(data => setAvailableHotels(data || []))
       .catch(err => console.error("Hotel fetch error:", err));
       
-    fetch("/api/zones")
+    apiFetch("/api/zones")
       .then(res => res.json())
       .then(data => {
         const zones = data || [];
@@ -115,7 +148,7 @@ export default function BookingPage() {
       })
       .catch(err => console.error("Zone error:", err));
 
-    fetch("/api/packages")
+    apiFetch("/api/packages")
       .then(res => res.json())
       .then(data => {
         if (data && data.length > 0) {
@@ -133,6 +166,39 @@ export default function BookingPage() {
       })
       .finally(() => setLoadingPackages(false));
   }, []);
+
+  useEffect(() => {
+    if (!form.hotelRequired || !form.hotelName || !availableHotels.length) return;
+
+    const selectedHotelEntry = availableHotels.find((h) => h.name === form.hotelName);
+    if (!selectedHotelEntry) return;
+
+    const selectedRoom = selectedHotelEntry.rooms?.find((r) => r.type === form.roomType) || selectedHotelEntry.rooms?.[0];
+    if (!selectedRoom) return;
+
+    const planLabel = form.mealPlan || selectedRoom.mealPlans?.[0]?.label || "Free Breakfast";
+    const selectedPlan = selectedRoom.mealPlans?.find((m) => m.label === planLabel) || selectedRoom.mealPlans?.[0];
+
+    let basePrice = selectedRoom.discountPrice || selectedHotelEntry.price || 0;
+    if (selectedPlan) {
+      if (selectedPlan.label === "Room Only") {
+        basePrice = selectedRoom.mealPlans?.some(m => m.label === "Free Breakfast") ? basePrice - 500 : basePrice;
+      } else if (selectedPlan.label === "Breakfast & Lunch/Dinner") {
+        basePrice += 1500;
+      } else if (selectedPlan.label === "Breakfast, Lunch & Dinner") {
+        basePrice += 2800;
+      }
+    }
+
+    setForm((prev) => {
+      if (prev.hotelPrice === basePrice && prev.hotelTaxes === (selectedRoom.taxes || 0)) return prev;
+      return {
+        ...prev,
+        hotelPrice: basePrice,
+        hotelTaxes: selectedRoom.taxes || 0,
+      };
+    });
+  }, [availableHotels, form.hotelRequired, form.hotelName, form.roomType, form.mealPlan]);
   
   const paymentSuccess = searchParams.get("payment_success") === "true";
   const bookingId = searchParams.get("booking_id");
@@ -226,7 +292,7 @@ export default function BookingPage() {
       handler: async function (response) {
         setIsVerifying(true);
         try {
-          const verifyRes = await fetch(`/api/bookings/${bookingData._id}/verify-razorpay`, {
+          const verifyRes = await apiFetch(`/api/bookings/${bookingData._id}/verify-razorpay`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
@@ -285,6 +351,7 @@ export default function BookingPage() {
       amountPaid,
       amountRemaining,
       hotelRequired: form.hotelRequired,
+      hotelId: form.hotelId,
       hotelName: form.hotelRequired ? form.hotelName : "",
       phone: `${form.countryCode} ${form.phone}`,
       ...form,
@@ -293,7 +360,7 @@ export default function BookingPage() {
     setIsProcessing(true);
 
     // Send to backend API
-    fetch("/api/bookings", {
+    apiFetch("/api/bookings", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

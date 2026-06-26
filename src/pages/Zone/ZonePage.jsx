@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import PageTemplate from "../../components/PageTemplate";
+import { apiFetch } from "../../utils/api";
 
 const zoneData = {
   dhikala: {
@@ -204,7 +205,6 @@ const zoneData = {
 export default function ZonePage({ slug: propSlug }) {
   const { slug: urlSlug } = useParams();
   const slug = propSlug ?? urlSlug;
-  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:4000";
 
   const [zone, setZone] = useState(zoneData[slug]);
   const [loading, setLoading] = useState(!zone);
@@ -217,7 +217,7 @@ export default function ZonePage({ slug: propSlug }) {
       setLoading(true);
       setError(null);
       try {
-        const res = await fetch(`${API_BASE_URL}/api/zones/${slug}`);
+        const res = await apiFetch(`/api/zones/${slug}`);
         if (!res.ok) throw new Error("Zone not found");
         const data = await res.json();
         if (!cancelled) setZone(data);
@@ -232,17 +232,17 @@ export default function ZonePage({ slug: propSlug }) {
     else setLoading(false);
 
     return () => { cancelled = true; };
-  }, [slug, API_BASE_URL]);
+  }, [slug]);
 
   useEffect(() => {
     async function fetchRates() {
       try {
-        const res = await fetch(`${API_BASE_URL}/api/ticket-prices`);
+        const res = await apiFetch(`/api/ticket-prices`);
         if (res.ok) setTicketRates(await res.json());
       } catch (err) { console.error(err); }
     }
     fetchRates();
-  }, [API_BASE_URL]);
+  }, []);
 
 
   if (loading) {
@@ -259,155 +259,157 @@ export default function ZonePage({ slug: propSlug }) {
         <p>Sorry, we couldn't find that zone. Please go back to the home page.</p>
       </PageTemplate>
     );
-  }
+  }  return (
+    <div 
+      className="relative min-h-screen bg-cover bg-center bg-no-repeat bg-fixed -my-10 py-10"
+      style={{ 
+        backgroundImage: `linear-gradient(rgba(0, 0, 0, 0.65), rgba(0, 0, 0, 0.65)), url(${zone.image})` 
+      }}
+    >
+      <PageTemplate title={zone.title} description={zone.description} dark={true}>
+        <div className="space-y-10">
+          <section className="relative overflow-hidden rounded-3xl shadow-xl border border-white/20 bg-white/15 p-8 md:p-12 backdrop-blur-md text-white">
+            <div className="max-w-2xl">
+              <span className="rounded-full bg-secondary px-3 py-1 text-xs font-bold text-black uppercase tracking-wider">
+                {zone.slug} Zone
+              </span>
+              <h2 className="mt-4 text-3xl font-extrabold text-white sm:text-4xl">{zone.title}</h2>
+              <p className="mt-2 text-base text-white/95 leading-relaxed font-medium">{zone.subtitle}</p>
+            </div>
+            {zone.isOpen === false && (
+              <div className="absolute top-5 right-5 rotate-3 scale-110">
+                 <span className="bg-red-600 text-white px-6 py-2 rounded-lg font-black text-xl shadow-2xl border-4 border-white/30 animate-pulse">
+                   CLOSED
+                 </span>
+              </div>
+            )}
+          </section>
 
-  return (
-    <PageTemplate title={zone.title} description={zone.description}>
-      <div className="space-y-10">
-        <section className="relative overflow-hidden rounded-3xl shadow-xl ">
-          <img
-            className="h-64 w-full object-cover"
-            src={zone.image}
-            alt={zone.title}
-          />
-          <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-black/0 to-black/60" />
-          <div className="absolute bottom-5 left-5">
-            <h2 className="text-3xl font-bold text-white">{zone.title}</h2>
-            <p className="mt-1 max-w-lg text-sm text-white/80">{zone.subtitle}</p>
-          </div>
+          {/* Closure Notice */}
           {zone.isOpen === false && (
-            <div className="absolute top-5 right-5 rotate-3 scale-110">
-               <span className="bg-red-600 text-white px-6 py-2 rounded-lg font-black text-xl shadow-2xl border-4 border-white/30 animate-pulse">
-                 CLOSED
-               </span>
+            <div className="rounded-2xl border-2 border-red-200 bg-red-900/40 p-6 shadow-red-950/20 shadow-xl backdrop-blur-md">
+               <div className="flex gap-4 items-start text-red-200">
+                  <i className="fas fa-exclamation-triangle text-2xl mt-1" />
+                  <div>
+                    <h3 className="text-lg font-bold mb-1">Seasonal Closure Notice</h3>
+                    <p className="text-sm leading-relaxed whitespace-pre-line">
+                      {zone.closureNotice || `${zone.title} is currently closed for visitors due to periodic maintenance or seasonal changes. Please check back later for opening updates.`}
+                    </p>
+                  </div>
+               </div>
             </div>
           )}
-        </section>
 
-        {/* Closure Notice */}
-        {zone.isOpen === false && (
-          <div className="rounded-2xl border-2 border-red-200 bg-red-50 p-6 shadow-red-100 shadow-xl">
-             <div className="flex gap-4 items-start text-red-700">
-                <i className="fas fa-exclamation-triangle text-2xl mt-1" />
-                <div>
-                  <h3 className="text-lg font-bold mb-1">Seasonal Closure Notice</h3>
-                  <p className="text-sm leading-relaxed whitespace-pre-line">
-                    {zone.closureNotice || `${zone.title} is currently closed for visitors due to periodic maintenance or seasonal changes. Please check back later for opening updates.`}
-                  </p>
-                </div>
-             </div>
-          </div>
-        )}
-
-        <section className="grid gap-8 lg:grid-cols-3">
-          <div className="lg:col-span-2 space-y-6">
-            <div className="rounded-2xl border border-white/20 bg-white/60 p-6 shadow-lg backdrop-blur">
-              <h3 className="text-xl font-semibold">About this zone</h3>
-              <p className="mt-3 text-sm text-slate-700">{zone.description}</p>
-            </div>
-
-            <div className="rounded-2xl border border-white/20 bg-white/60 p-6 shadow-lg backdrop-blur">
-              <h3 className="text-xl font-semibold">Wildlife to spot</h3>
-              <div className="mt-4 grid gap-6 md:grid-cols-2">
-                {zone.wildlife.map((item) => (
-                  <div
-                    key={item.name}
-                    className="flex flex-col overflow-hidden rounded-2xl border border-white/15 bg-white/70 shadow-inner"
-                  >
-                    <div className="h-32 overflow-hidden">
-                      <img
-                        src={item.image}
-                        alt={item.name}
-                        className="h-full w-full object-cover"
-                      />
-                    </div>
-                    <div className="p-4">
-                      <h4 className="font-semibold">{item.name}</h4>
-                      <p className="mt-2 text-sm text-slate-600">{item.description}</p>
-                    </div>
-                  </div>
-                ))}
+          <section className="grid gap-8 lg:grid-cols-3">
+            <div className="lg:col-span-2 space-y-6">
+              <div className="rounded-2xl border border-white/20 bg-white/10 p-6 shadow-lg backdrop-blur text-white">
+                <h3 className="text-xl font-semibold">About this zone</h3>
+                <p className="mt-3 text-sm text-white/80 leading-relaxed">{zone.description}</p>
               </div>
-            </div>
 
-            <div className="rounded-2xl border border-white/20 bg-white/60 p-6 shadow-lg backdrop-blur text-slate-800">
-              <h3 className="text-xl font-semibold">Safari Pricing & Permits</h3>
-              <div className="mt-4 overflow-hidden rounded-xl border border-slate-200 bg-white/50">
-                <table className="w-full text-left text-sm">
-                  <thead className="bg-slate-100 text-slate-700">
-                    <tr>
-                      <th className="px-4 py-2 font-semibold">Visitor Category</th>
-                      <th className="px-4 py-2 font-semibold">Entry Fee</th>
-                      <th className="px-4 py-2 font-semibold">Jeep Hire</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {(zone.pricing || ticketRates).length > 0 ? (
-                      (zone.pricing || ticketRates).map((rate, i) => (
-                        <tr key={rate._id || i} className="border-t border-slate-200">
-                          <td className="px-4 py-3 font-medium">{rate.category}</td>
-                          <td className="px-4 py-3 text-slate-600">{rate.entryFee}</td>
-                          <td className="px-4 py-3 text-slate-600">{rate.jeepHire}</td>
-                        </tr>
-                      ))
-                    ) : (
-                      <tr className="border-t border-slate-200">
-                        <td colSpan="3" className="px-4 py-4 text-center text-slate-500 italic">
-                          Prices vary by season. Please check the official portal.
-                        </td>
+              <div className="rounded-2xl border border-white/20 bg-white/10 p-6 shadow-lg backdrop-blur text-white">
+                <h3 className="text-xl font-semibold">Wildlife to spot</h3>
+                <div className="mt-4 grid gap-6 md:grid-cols-2">
+                  {zone.wildlife.map((item) => (
+                    <div
+                      key={item.name}
+                      className="flex flex-col overflow-hidden rounded-2xl border border-white/15 bg-white/10 shadow-inner"
+                    >
+                      <div className="h-32 overflow-hidden">
+                        <img
+                          src={item.image}
+                          alt={item.name}
+                          className="h-full w-full object-cover"
+                        />
+                      </div>
+                      <div className="p-4">
+                        <h4 className="font-semibold text-white">{item.name}</h4>
+                        <p className="mt-2 text-sm text-white/70 leading-relaxed">{item.description}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="rounded-2xl border border-white/20 bg-white/10 p-6 shadow-lg backdrop-blur text-white">
+                <h3 className="text-xl font-semibold text-white">Safari Pricing & Permits</h3>
+                <div className="mt-4 overflow-hidden rounded-xl border border-white/10 bg-white/5">
+                  <table className="w-full text-left text-sm">
+                    <thead className="bg-white/10 text-white">
+                      <tr>
+                        <th className="px-4 py-2 font-semibold">Visitor Category</th>
+                        <th className="px-4 py-2 font-semibold">Entry Fee</th>
+                        <th className="px-4 py-2 font-semibold">Jeep Hire</th>
                       </tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
-              <div className="mt-6 space-y-4">
-                <h4 className="font-semibold text-slate-800">Everything you need to know about tickets:</h4>
-                <div className="grid gap-4 text-sm text-slate-700 sm:grid-cols-2">
-                  <div className="flex gap-3">
-                    <span className="text-secondary mt-1"><i className="fas fa-ticket-alt" /></span>
-                    <p><strong>Advance Booking:</strong> Safari permits must be booked online at least 45-60 days in advance, especially for popular zones like Dhikala and Bijrani.</p>
-                  </div>
-                  <div className="flex gap-3">
-                    <span className="text-secondary mt-1"><i className="fas fa-id-card" /></span>
-                    <p><strong>ID Requirements:</strong> A valid government-issued ID (Aadhar, Voter ID, or Passport for foreigners) is mandatory during booking and entry.</p>
-                  </div>
-                  <div className="flex gap-3">
-                    <span className="text-secondary mt-1"><i className="fas fa-user-friends" /></span>
-                    <p><strong>Permit Validity:</strong> One permit allows entry for a maximum of 6 adults and 2 children (under 5 years) in a single jeep.</p>
-                  </div>
-                  <div className="flex gap-3">
-                    <span className="text-secondary mt-1"><i className="fas fa-ban" /></span>
-                    <p><strong>Non-Transferable:</strong> Tickets are non-transferable and non-refundable once issued by the forest department.</p>
+                    </thead>
+                    <tbody>
+                      {(zone.pricing || ticketRates).length > 0 ? (
+                        (zone.pricing || ticketRates).map((rate, i) => (
+                          <tr key={rate._id || i} className="border-t border-white/10">
+                            <td className="px-4 py-3 font-medium text-white">{rate.category}</td>
+                            <td className="px-4 py-3 text-white/85">{rate.entryFee}</td>
+                            <td className="px-4 py-3 text-white/85">{rate.jeepHire}</td>
+                          </tr>
+                        ))
+                      ) : (
+                        <tr className="border-t border-white/10">
+                          <td colSpan="3" className="px-4 py-4 text-center text-white/50 italic">
+                            Prices vary by season. Please check the official portal.
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+                <div className="mt-6 space-y-4">
+                  <h4 className="font-semibold text-white">Everything you need to know about tickets:</h4>
+                  <div className="grid gap-4 text-sm text-white/80 sm:grid-cols-2">
+                    <div className="flex gap-3">
+                      <span className="text-secondary mt-1"><i className="fas fa-ticket-alt" /></span>
+                      <p><strong>Advance Booking:</strong> Safari permits must be booked online at least 45-60 days in advance, especially for popular zones like Dhikala and Bijrani.</p>
+                    </div>
+                    <div className="flex gap-3">
+                      <span className="text-secondary mt-1"><i className="fas fa-id-card" /></span>
+                      <p><strong>ID Requirements:</strong> A valid government-issued ID (Aadhar, Voter ID, or Passport for foreigners) is mandatory during booking and entry.</p>
+                    </div>
+                    <div className="flex gap-3">
+                      <span className="text-secondary mt-1"><i className="fas fa-user-friends" /></span>
+                      <p><strong>Permit Validity:</strong> One permit allows entry for a maximum of 6 adults and 2 children (under 5 years) in a single jeep.</p>
+                    </div>
+                    <div className="flex gap-3">
+                      <span className="text-secondary mt-1"><i className="fas fa-ban" /></span>
+                      <p><strong>Non-Transferable:</strong> Tickets are non-transferable and non-refundable once issued by the forest department.</p>
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
-          </div>
 
-          <aside className="space-y-6">
-            <div className="rounded-2xl border border-white/20 bg-white/60 p-6 shadow-lg backdrop-blur">
-              <h3 className="text-xl font-semibold">Quick facts</h3>
-              <ul className="mt-4 space-y-3 text-sm text-slate-700">
-                {zone.highlights.map((item) => (
-                  <li key={item} className="flex items-start gap-3">
-                    <span className="mt-1 inline-flex h-8 w-8 items-center justify-center rounded-full bg-secondary text-black">
-                      <i className="fas fa-check" />
-                    </span>
-                    <span>{item}</span>
-                  </li>
-                ))}
-              </ul>
-              <a
-                href={zone.isOpen === false ? "#" : "/booking"}
-                className={`mt-6 inline-flex w-full items-center justify-center rounded-full px-6 py-3 text-sm font-semibold shadow transition ${zone.isOpen === false ? 'bg-slate-300 text-slate-500 cursor-not-allowed' : 'bg-secondary text-black hover:bg-secondary/90'}`}
-              >
-                {zone.isOpen === false ? "Currently Closed" : "Book Safari"}
-              </a>
-            </div>
-          </aside>
-        </section>
-      </div>
-    </PageTemplate>
+            <aside className="space-y-6">
+              <div className="rounded-2xl border border-white/20 bg-white/10 p-6 shadow-lg backdrop-blur text-white">
+                <h3 className="text-xl font-semibold">Quick facts</h3>
+                <ul className="mt-4 space-y-3 text-sm text-white/80">
+                  {zone.highlights.map((item) => (
+                    <li key={item} className="flex items-start gap-3">
+                      <span className="mt-1 inline-flex h-8 w-8 items-center justify-center rounded-full bg-secondary text-black">
+                        <i className="fas fa-check" />
+                      </span>
+                      <span>{item}</span>
+                    </li>
+                  ))}
+                </ul>
+                <a
+                  href={zone.isOpen === false ? "#" : "/booking"}
+                  className={`mt-6 inline-flex w-full items-center justify-center rounded-full px-6 py-3 text-sm font-semibold shadow transition ${zone.isOpen === false ? 'bg-white/10 text-white/40 cursor-not-allowed border border-white/10' : 'bg-secondary text-black hover:bg-secondary/90'}`}
+                >
+                  {zone.isOpen === false ? "Currently Closed" : "Book Safari"}
+                </a>
+              </div>
+            </aside>
+          </section>
+        </div>
+      </PageTemplate>
+    </div>
   );
 }
 

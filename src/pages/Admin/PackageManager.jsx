@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { apiFetch } from "../../utils/api";
 
 export default function PackageManager() {
   const [packages, setPackages] = useState([]);
@@ -16,7 +17,7 @@ export default function PackageManager() {
 
   const loadPackages = async () => {
     try {
-      const response = await fetch("/api/packages");
+      const response = await apiFetch("/api/packages");
       if (response.ok) {
         setPackages(await response.json());
       }
@@ -35,7 +36,7 @@ export default function PackageManager() {
     const url = form._id ? `/api/packages/${form._id}` : "/api/packages";
 
     try {
-      const res = await fetch(url, {
+      const res = await apiFetch(url, {
         method,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(form)
@@ -54,7 +55,7 @@ export default function PackageManager() {
   const deletePackage = async (id) => {
     if (!confirm("Are you sure you want to delete this package?")) return;
     try {
-      await fetch(`/api/packages/${id}`, { method: "DELETE" });
+      await apiFetch(`/api/packages/${id}`, { method: "DELETE" });
       loadPackages();
     } catch (error) {
       console.error("Failed to delete package", error);

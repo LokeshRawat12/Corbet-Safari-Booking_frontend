@@ -1,5 +1,7 @@
 import { useMemo, useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import PageTemplate from "../../components/PageTemplate";
+import { apiFetch } from "../../utils/api";
 
 export default function HotelPage() {
   const [hotels, setHotels] = useState([]);
@@ -15,7 +17,7 @@ export default function HotelPage() {
   const [selectedHotel, setSelectedHotel] = useState(null);
 
   useEffect(() => {
-    fetch("/api/hotels")
+    apiFetch("/api/hotels")
       .then(res => res.json())
       .then(data => {
         setHotels(data || []);
@@ -445,6 +447,38 @@ function HotelDetailModal({ hotel, onClose, checkInDate, roomsConfig }) {
 
   const currentRooms = getFinalRooms();
 
+  const getDefaultRoomSelection = () => {
+    const room = currentRooms[0];
+    if (!room) return { roomType: "", mealPlan: "", price: 0, taxes: 0 };
+    const defaultPlanIdx = selectedPlans[0] !== undefined ? selectedPlans[0] : (room.mealPlans?.findIndex(m => m.label === "Free Breakfast" && m.isIncluded) || 0);
+    const plan = room.mealPlans?.[defaultPlanIdx] || room.mealPlans?.[0] || { label: "Free Breakfast" };
+    return {
+      roomType: room.type,
+      mealPlan: plan.label,
+      price: getAdjustedPrice(room, defaultPlanIdx),
+      taxes: room.taxes || 0,
+    };
+  };
+
+  const defaultRoomSelection = getDefaultRoomSelection();
+
+  const navigate = useNavigate();
+  const routeToBooking = (room, currentPlanIdx) => {
+    const roomType = encodeURIComponent(room.type);
+    const mealPlan = encodeURIComponent(room.mealPlans[currentPlanIdx]?.label || "Free Breakfast");
+    const price = getAdjustedPrice(room, currentPlanIdx);
+    const taxes = room.taxes || 0;
+    const date = encodeURIComponent(checkInDate || "");
+    const rooms = roomsConfig.length;
+    const adults = roomsConfig.reduce((acc, r) => acc + r.adults, 0);
+    const children = roomsConfig.reduce((acc, r) => acc + r.children, 0);
+
+    const hotelId = hotel._id || hotel.id || "";
+    navigate(
+      `/booking?type=hotel&hotelId=${hotelId}&hotelName=${encodeURIComponent(hotel.name)}&roomType=${roomType}&mealPlan=${mealPlan}&price=${price}&taxes=${taxes}&date=${date}&rooms=${rooms}&adults=${adults}&children=${children}`
+    );
+  };
+
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6 bg-black/80 backdrop-blur-sm overflow-y-auto">
       <div className="bg-white w-full max-w-5xl rounded-3xl overflow-hidden shadow-2xl animate-in fade-in zoom-in duration-300 relative">
@@ -555,12 +589,13 @@ function HotelDetailModal({ hotel, onClose, checkInDate, roomsConfig }) {
                               <p className="text-2xl font-black text-slate-900 leading-tight">₹{displayPrice.toLocaleString()}</p>
                               <p className="text-[10px] text-slate-400">+ ₹{room.taxes || 0} taxes & fees</p>
                            </div>
-                           <a 
-                             href={`/booking?type=hotel&hotelId=${hotel._id}&hotelName=${encodeURIComponent(hotel.name)}&roomType=${encodeURIComponent(room.type)}&mealPlan=${encodeURIComponent(room.mealPlans[currentPlanIdx].label)}&price=${displayPrice}&taxes=${room.taxes || 0}&date=${checkInDate}&rooms=${roomsConfig.length}&adults=${roomsConfig.reduce((acc, r) => acc + r.adults, 0)}&children=${roomsConfig.reduce((acc, r) => acc + r.children, 0)}`} 
+                           <button
+                             type="button"
+                             onClick={() => routeToBooking(room, currentPlanIdx)}
                              className="w-full bg-[#1a3c34] hover:bg-[#15312a] text-white py-3 rounded-xl text-center font-bold text-sm shadow-xl transition mt-4"
                            >
                              Book Now
-                           </a>
+                           </button>
                         </div>
                       </div>
                     );
@@ -593,9 +628,45 @@ function HotelDetailModal({ hotel, onClose, checkInDate, roomsConfig }) {
                  </div>
               </div>
               {hotel.mapUrl ? (
-                <iframe src={hotel.mapUrl} className="w-full h-[300px] rounded-2xl border-0 shadow-inner" allowFullScreen="" loading="lazy"></iframe>
+                <a 
+                  href={hotel.mapUrl} 
+                  target="_blank" 
+                  rel="noreferrer"
+                  className="group relative overflow-hidden rounded-2xl border-2 border-amber-500/30 shadow-lg hover:shadow-2xl transition cursor-pointer block h-[300px]"
+                >
+                  <div className="absolute inset-0">
+                    {hotel.mapImage ? (
+                      <div
+                        className="h-full w-full bg-cover bg-center transition-transform duration-300 group-hover:scale-105"
+                        style={{ backgroundImage: `url(${hotel.mapImage})` }}
+                      />
+                    ) : (
+                      <div
+                        className="h-full w-full bg-cover bg-center transition-transform duration-300 group-hover:scale-105"
+                        style={{ backgroundImage: `url(https://images.unsplash.com/photo-1524661135-423995f22d0b?auto=format&fit=crop&q=80&w=800)` }}
+                      />
+                    )}
+                    <div className="absolute inset-0 bg-black/40 backdrop-blur-[1px]" />
+                  </div>
+
+                  <div className="absolute inset-0 flex items-center justify-center p-6">
+                    <div className="text-center">
+                      <svg className="w-12 h-12 text-white mb-3 mx-auto drop-shadow-lg" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
+                      </svg>
+                      <p className="font-bold text-white text-lg drop-shadow-lg">{hotel.location}</p>
+                      <p className="text-amber-400 text-sm font-semibold mt-2 drop-shadow-lg">Click to view on Google Maps →</p>
+                    </div>
+                  </div>
+                </a>
               ) : (
-                <div className="bg-slate-50 h-[200px] rounded-2xl flex items-center justify-center border border-slate-100 italic text-slate-400">Map view coming soon...</div>
+                <div className="bg-gradient-to-br from-slate-50 to-slate-100 h-[300px] rounded-2xl flex items-center justify-center border-2 border-dashed border-slate-300">
+                  <div className="text-center">
+                    <p className="text-3xl mb-2">📍</p>
+                    <p className="text-slate-600 font-semibold">Map location not yet configured</p>
+                    <p className="text-slate-400 text-sm">Add Google Maps link in the admin panel</p>
+                  </div>
+                </div>
               )}
             </section>
 

@@ -3,6 +3,7 @@ import ZoneManager from "./ZoneManager";
 import TicketPriceManager from "./TicketPriceManager";
 import PackageManager from "./PackageManager";
 import ContactManager from "./ContactManager";
+import { apiFetch } from "../../utils/api";
 
 
 
@@ -15,7 +16,7 @@ const LS_KEY = "corbett_bookings";
 ───────────────────────────────────────────── */
 async function getBookingsFromAPI() {
   try {
-    const response = await fetch("/api/bookings");
+    const response = await apiFetch("/api/bookings");
     if (!response.ok) return [];
     const data = await response.json();
     return data;
@@ -26,7 +27,7 @@ async function getBookingsFromAPI() {
 
 async function updateBookingStatus(id, status) {
   try {
-    const response = await fetch(`/api/bookings/${id}/status`, {
+    const response = await apiFetch(`/api/bookings/${id}/status`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ status }),
@@ -39,7 +40,7 @@ async function updateBookingStatus(id, status) {
 
 async function getHotelsFromAPI() {
   try {
-    const response = await fetch("/api/hotels");
+    const response = await apiFetch("/api/hotels");
     if (!response.ok) return [];
     return await response.json();
   } catch { return []; }
@@ -305,6 +306,7 @@ function HotelManager() {
   const [form, setForm] = useState({ 
     name: "", 
     location: "", 
+    description: "",
     price: 0, 
     rating: 4.5, 
     image: "",
@@ -312,6 +314,7 @@ function HotelManager() {
     facilities: [],
     policies: [],
     mapUrl: "",
+    mapImage: "",
     freeCancellation: true,
     breakfastIncluded: true,
     rooms: []
@@ -329,7 +332,7 @@ function HotelManager() {
     const method = form._id ? "PUT" : "POST";
     const url = form._id ? `/api/hotels/${form._id}` : "/api/hotels";
     
-    const res = await fetch(url, {
+    const res = await apiFetch(url, {
       method,
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(form)
@@ -338,13 +341,13 @@ function HotelManager() {
     if (res.ok) {
       loadHotels();
       setShowForm(false);
-      setForm({ name: "", location: "", price: 0, rating: 4.5, image: "", gallery: [], facilities: [], policies: [], mapUrl: "", freeCancellation: true, breakfastIncluded: true, rooms: [] });
+      setForm({ name: "", location: "", description: "", price: 0, rating: 4.5, image: "", gallery: [], facilities: [], policies: [], mapUrl: "", mapImage: "", freeCancellation: true, breakfastIncluded: true, rooms: [] });
     }
   };
 
   const deleteHotel = async (id) => {
     if (!confirm("Are you sure?")) return;
-    await fetch(`/api/hotels/${id}`, { method: "DELETE" });
+    await apiFetch(`/api/hotels/${id}`, { method: "DELETE" });
     loadHotels();
   };
 
@@ -385,7 +388,7 @@ function HotelManager() {
       <div className="flex items-center justify-between">
         <h2 className="text-xl font-bold text-white">Manage Hotels</h2>
         <button 
-          onClick={() => { setForm({ name: "", location: "", price: 0, rating: 4.5, image: "", gallery: [], facilities: [], policies: [], mapUrl: "", freeCancellation: true, breakfastIncluded: true, rooms: [] }); setShowForm(true); }}
+          onClick={() => { setForm({ name: "", location: "", description: "", price: 0, rating: 4.5, image: "", gallery: [], facilities: [], policies: [], mapUrl: "", mapImage: "", freeCancellation: true, breakfastIncluded: true, rooms: [] }); setShowForm(true); }}
           className="rounded-xl bg-amber-400 px-4 py-2 text-xs font-bold text-slate-900 shadow-lg hover:scale-105 transition"
         >
           + Add New Hotel
@@ -453,9 +456,11 @@ function HotelManager() {
               />
             </div>
 
+
             <div className="space-y-1 sm:col-span-2">
-              <label className="text-[10px] font-bold uppercase text-white/40">Google Maps Embed URL</label>
-              <input value={form.mapUrl} onChange={e => setForm({...form, mapUrl: e.target.value})} className="w-full rounded-xl bg-white/10 p-3 text-sm text-white outline-none border border-white/10" placeholder="https://google.com/maps/..." />
+              <label className="text-[10px] font-bold uppercase text-white/40">Google Maps Link</label>
+              <input value={form.mapUrl} onChange={e => setForm({...form, mapUrl: e.target.value})} className="w-full rounded-xl bg-white/10 p-3 text-sm text-white outline-none border border-white/10" placeholder="https://www.google.com/maps/place/..." />
+              <p className="text-[10px] text-slate-300">ℹ️ Paste a Google Maps link (e.g., search for the hotel on Google Maps, copy the URL from your browser address bar). When users click the map image, they'll be taken to Google Maps.</p>
             </div>
             
             <div className="flex items-center gap-6 py-2 sm:col-span-2">
@@ -565,8 +570,29 @@ function HotelManager() {
             <div className="p-4">
               <h3 className="font-bold text-white">{h.name}</h3>
               <p className="text-xs text-white/50">{h.location} • ₹{h.price.toLocaleString()}</p>
-              <div className="mt-4 flex gap-2">
-                <button onClick={() => { setForm(h); setShowForm(true); }} className="px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider bg-white/10 text-white/70 rounded-lg hover:bg-white/20 transition">Edit</button>
+              <div className="mt-4 flex flex-wrap items-center gap-2">
+                {h.mapUrl && (
+                  <a href={h.mapUrl} target="_blank" rel="noreferrer" className="px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider bg-slate-800 text-slate-200 rounded-lg hover:bg-slate-700 transition">
+                    View Map
+                  </a>
+                )}
+                <button 
+                  onClick={() => { 
+                    setForm({ 
+                      ...h, 
+                      mapImage: h.mapImage || "", 
+                      mapUrl: h.mapUrl || "",
+                      gallery: h.gallery || [],
+                      facilities: h.facilities || [],
+                      policies: h.policies || [],
+                      rooms: h.rooms || []
+                    }); 
+                    setShowForm(true); 
+                  }} 
+                  className="px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider bg-white/10 text-white/70 rounded-lg hover:bg-white/20 transition"
+                >
+                  Edit
+                </button>
                 <button onClick={() => deleteHotel(h._id)} className="px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider bg-red-500/20 text-red-300 rounded-lg hover:bg-red-500/30 transition">Delete</button>
               </div>
             </div>
@@ -649,7 +675,7 @@ function Dashboard({ onLogout }) {
 
   const deleteOne = async (id) => {
     try {
-      await fetch(`/api/bookings/${id}`, { method: 'DELETE' });
+      await apiFetch(`/api/bookings/${id}`, { method: 'DELETE' });
       load();
       setSelected((prev) => { const s = new Set(prev); s.delete(id); return s; });
     } catch (e) { console.error(e); }
@@ -657,7 +683,7 @@ function Dashboard({ onLogout }) {
 
   const deleteSelected = async () => {
     try {
-      await Promise.all([...selected].map(id => fetch(`/api/bookings/${id}`, { method: 'DELETE' })));
+      await Promise.all([...selected].map(id => apiFetch(`/api/bookings/${id}`, { method: 'DELETE' })));
       load();
       setSelected(new Set());
     } catch (e) { console.error(e); }
@@ -665,7 +691,7 @@ function Dashboard({ onLogout }) {
 
   const clearAll = async () => {
     try {
-      await Promise.all(bookings.map(b => fetch(`/api/bookings/${b._id || b.id}`, { method: 'DELETE' })));
+      await Promise.all(bookings.map(b => apiFetch(`/api/bookings/${b._id || b.id}`, { method: 'DELETE' })));
       load();
       setSelected(new Set());
       setConfirmClear(false);
