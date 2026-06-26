@@ -33,14 +33,14 @@ export default function Navbar() {
 
         <button
           type="button"
-          className="inline-flex items-center justify-center rounded-md p-2 text-white hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-white lg:hidden"
+          className="inline-flex h-10 w-10 flex-col items-center justify-center gap-1.5 rounded-md p-2 text-white hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-white lg:hidden"
           onClick={toggleMenu}
           aria-label="Toggle menu"
         >
-          <span className="sr-only">Open menu</span>
-          <span className="h-0.5 w-4 bg-white" />
-          <span className="h-0.5 w-4 bg-white mt-2" />
-          <span className="h-0.5 w-4 bg-white " />
+          <span className="sr-only">Toggle navigation</span>
+          <span className="block h-0.5 w-5 rounded-full bg-white" />
+          <span className="block h-0.5 w-5 rounded-full bg-white" />
+          <span className="block h-0.5 w-5 rounded-full bg-white" />
         </button>
 
         <nav
