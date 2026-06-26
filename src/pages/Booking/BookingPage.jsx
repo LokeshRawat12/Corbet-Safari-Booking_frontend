@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import PageTemplate from "../../components/PageTemplate";
 import { tourPackages as fallbackPackages } from "../../data/packages";
+import { fallbackZones } from "../../data/zones";
 import { countryCodes } from "../../data/countries";
 import { apiFetch } from "../../utils/api";
 
@@ -123,7 +124,7 @@ export default function BookingPage() {
     apiFetch("/api/zones")
       .then(res => res.json())
       .then(data => {
-        const zones = data || [];
+        const zones = (data && data.length > 0) ? data : fallbackZones;
         setAvailableZones(zones);
         
         // Set default zone if not in query, but only if it's open
@@ -146,7 +147,21 @@ export default function BookingPage() {
           });
         }
       })
-      .catch(err => console.error("Zone error:", err));
+      .catch(err => {
+        console.error("Zone error:", err);
+        // Use fallback zones when API is unreachable
+        setAvailableZones(fallbackZones);
+        const defaultZone = fallbackZones.find(z => z.isOpen !== false) || fallbackZones[0];
+        if (defaultZone) {
+          setForm(prev => {
+            const isForeigner = prev.country !== "India";
+            const price = isForeigner
+              ? (defaultZone.foreignerPrice || (defaultZone.price * 5))
+              : (defaultZone.price || 0);
+            return { ...prev, tourismZone: defaultZone.title, zonePrice: price };
+          });
+        }
+      });
 
     apiFetch("/api/packages")
       .then(res => res.json())

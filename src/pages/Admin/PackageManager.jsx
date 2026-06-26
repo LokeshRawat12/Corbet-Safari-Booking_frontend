@@ -64,17 +64,30 @@ export default function PackageManager() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h2 className="text-xl font-bold text-white">Manage Tour Packages</h2>
-        <button
-          onClick={() => {
-            setForm({ slug: "", title: "", duration: "", safari: "", price: 0, currency: "INR", description: "", image: "" });
-            setShowForm(true);
-          }}
-          className="rounded-xl bg-amber-400 px-4 py-2 text-xs font-bold text-slate-900 shadow-lg hover:scale-105 transition"
-        >
-          + Add New Package
-        </button>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h2 className="text-xl font-bold text-white">Manage Tour Packages</h2>
+          <p className="text-xs text-white/40">Edits here are served to the public /packages page.</p>
+        </div>
+        <div className="flex flex-wrap gap-3">
+          <a
+            href="/packages"
+            target="_blank"
+            rel="noreferrer"
+            className="rounded-xl bg-white/10 px-4 py-2 text-xs font-bold text-white shadow-lg hover:bg-white/15 transition"
+          >
+            👁️ View Packages Page
+          </a>
+          <button
+            onClick={() => {
+              setForm({ slug: "", title: "", duration: "", safari: "", price: 0, currency: "INR", description: "", image: "" });
+              setShowForm(true);
+            }}
+            className="rounded-xl bg-amber-400 px-4 py-2 text-xs font-bold text-slate-900 shadow-lg hover:scale-105 transition"
+          >
+            + Add New Package
+          </button>
+        </div>
       </div>
 
       {showForm && (
@@ -187,6 +200,14 @@ export default function PackageManager() {
                 </div>
                 <p className="mt-2 text-xs text-white/40 line-clamp-2">{pkg.description}</p>
                 <div className="mt-4 flex gap-2">
+                  <a
+                    href="/packages"
+                    target="_blank"
+                    rel="noreferrer"
+                    className="rounded-lg bg-slate-700/80 px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-white/70 hover:bg-slate-600 transition"
+                  >
+                    View
+                  </a>
                   <button
                     onClick={() => { setForm(pkg); setShowForm(true); }}
                     className="rounded-lg bg-white/10 px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-white/70 hover:bg-white/20 transition"
