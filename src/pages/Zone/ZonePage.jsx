@@ -206,8 +206,8 @@ export default function ZonePage({ slug: propSlug }) {
   const { slug: urlSlug } = useParams();
   const slug = propSlug ?? urlSlug;
 
-  const [zone, setZone] = useState(zoneData[slug]);
-  const [loading, setLoading] = useState(!zone);
+  const [zone, setZone] = useState(null);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [ticketRates, setTicketRates] = useState([]);
 
@@ -218,18 +218,35 @@ export default function ZonePage({ slug: propSlug }) {
       setError(null);
       try {
         const res = await apiFetch(`/api/zones/${slug}`);
-        if (!res.ok) throw new Error("Zone not found");
+        if (!res.ok) {
+          const fallback = zoneData[slug];
+          if (!cancelled) {
+            setZone(fallback || null);
+            setError(`Zone not found in API; using fallback data.`);
+          }
+          return;
+        }
         const data = await res.json();
-        if (!cancelled) setZone(data);
+        if (!cancelled) {
+          setZone(data);
+        }
       } catch (err) {
-        if (!cancelled) setError(err.message);
+        if (!cancelled) {
+          const fallback = zoneData[slug];
+          setZone(fallback || null);
+          setError(`Failed to load zone from backend: ${err.message}`);
+        }
       } finally {
         if (!cancelled) setLoading(false);
       }
     }
 
-    if (slug) fetchZone();
-    else setLoading(false);
+    if (slug) {
+      fetchZone();
+    } else {
+      setZone(null);
+      setLoading(false);
+    }
 
     return () => { cancelled = true; };
   }, [slug]);
