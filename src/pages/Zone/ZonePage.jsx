@@ -280,7 +280,7 @@ export default function ZonePage({ slug: propSlug }) {
     <div 
       className="relative min-h-screen bg-cover bg-center bg-no-repeat bg-fixed -my-10 py-10"
       style={{ 
-        backgroundImage: `linear-gradient(rgba(0, 0, 0, 0.65), rgba(0, 0, 0, 0.65)), url(${zone.image})` 
+        backgroundImage: `linear-gradient(rgba(0, 0, 0, 0.65), rgba(0, 0, 0, 0.65)), url("${zone.image}")`
       }}
     >
       <PageTemplate title={zone.title} description={zone.description} dark={true}>
