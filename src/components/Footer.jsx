@@ -33,7 +33,7 @@ export default function Footer() {
     { name: 'Best Time to Visit', path: '/best-time-to-visit' },
     { name: 'How to Reach', path: '/how-to-reach' },
     { name: 'Tiger Conservation', path: '/tiger-conservation' },
-    { name: 'Safari Zones', path: '/safari-booking' },
+    { name: 'Contact Us', path: '/contact' },
   ];
 
   const supportLinks = [
